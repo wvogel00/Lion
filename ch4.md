@@ -146,6 +146,27 @@ fの計算時間が一定の場合，ステップ数は $\small\Theta(\log{t})$
 
 ---
 # 4-2 グリッド探索
+狭義単調増加関数 $\small : f(x,y) = t \ \ \{x,y,t \in \mathrm{N}\}$
+
+$f$ : p.67 Figure.1
+```hs
+search f t = [(x,y) | x <- [0 .. t], y <- [0 .. t], t == f (x,y)]
+```
+$\Rightarrow\Theta(t^2)$のステップ数
+$\small\forall{x}\exists{y},\{0\le x\le t\},\ \small t\le f(x,y)$となるxで探索打ち切り．
+
+$\longrightarrow$ 3種類の二分探索実装法
+
+---
+左上から探索する
+```hs
+search f t = [(x,y) | x <- [0 .. t], y <- [t,t-1 .. 0], t == f (x,y)]
+```
+探索区間を設ける
+```hs
+searchIn (a,b) f t = [(x,y) | x <- [a .. t], y <- [b,b-1 .. 0], t == f (x,y)]
+```
+
 
 ---
 # Excercise
