@@ -38,9 +38,9 @@ sb_search f t = searchIn (0,t) -- サドルバック探索
                          | t < z = searchIn (x,y - 1)
                          where z = f (x,y)
 
-
-sb_search' :: ((Nat,Nat) -> Nat) -> Nat -> [(Nat,Nat)]
-sb_search' f t = from (0,p) (q,0) where
+-- 分割統治法
+dc_search' :: ((Nat,Nat) -> Nat) -> Nat -> [(Nat,Nat)]
+dc_search' f t = from (0,p) (q,0) where
     p = smallest (-1,t) (\y -> f (0,y)) t
     q = smallest (-1,t) (\x -> f (x,0)) t
     from (x1,y1) (x2,y2)
@@ -60,10 +60,6 @@ sb_search' f t = from (0,p) (q,0) where
                 | z == t = (c,y):from (x1,y1) (c-1,y+1)++from (c+1,y-1) (x2,y2)
                 |  t < z = from (x1,y1) (c-1,y) ++ from (c+1,y-1) (x2,y2)
                 where z = f (c,y)
-
-
-
-
 
 gridf :: (Nat,Nat) -> Nat
 gridf (x,y)
