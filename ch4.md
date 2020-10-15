@@ -294,7 +294,330 @@ flatten Null = []
 flatten (Node l x r) = flatten l ++ [x] ++ flatten r
 ```
 <!--3-8でみたようにflattenは線形ではない．詳しくはExerciseで-->
+二分探索木：左部分木の要素 < 節の要素 < 右部分木の要素
+
+---
+辞書探索に使われる，keyによって探索する方式
+```haskell
+search :: Ord k => (a -> k) -> k -> Tree a -> Maybe a
+search key k Null = Nothing
+search key k (Node l x r)
+    | key x  < k = search key k r
+    | key x == k = Just x
+    | key x  > k = search key k l
+```
+最悪の場合でも木の高さに比例した計算量 $\rightarrow O(\log n)$を保証
+```haskell
+height :: Tree a -> Nat
+height Null = 0
+height (Mode l x r) = 1 + max (height l) (height r)
+```
+
+---
+## 木の高さとサイズの関係
+同サイズの木が同じ高さである必要はなく，高さhとサイズnは
+$\small\lceil\log(n+1)\rceil \le h \le n \lt 2^h$を満たす．
+
+左/右部分木の高さの差が最大でも1のとき，木はバランスしている．
+（他にもバランスの定義は色々あるけどね）
+
+木tが平衡木ならば，　$\small h \le 1.4404\log(n+1)+\Theta(1)$
+
+---
+#### Proof.
+$H(n)$ ... サイズnの木がとりうる最大の高さ
+$S(h)$ ... 高さhの木がとりうる最小サイズ
+
+$\rightarrow S(H(n)) \le n$
+
+下限を定める関数fで上限も置き換えられる．
+$\small f(n) \le S(n)$の時，
+$\small f(H(n)) \le n \Rightarrow  H(n) \le f^{-1}(n)$
+
+---
+#### Proof. 続き
+case Null ... n=0, S(0) = 0
+case h=1 ... S(1) = 1
+case others ... S(h+2) = S(h+1) + S(h) + 1
+
+S(h) = fib(h+2)-1
+fibの定義を見る
+
+---
+#### Proof. 続き
+$\small x^2-x-1=0$の二つの解，$\small \phi=\frac{1+\sqrt{5}}{2},\ \ \psi\frac{1-\sqrt{5}}{2}$
+
+$\small fib(n) = (\phi^n - \psi^n)/\sqrt5$
+$\small fib(n) = (\phi^n - 1)/\sqrt5 \ \ \scriptsize(\because \psi < 1)$
+
+したがって
+
+$\small (\phi^{H(n)+2}-1)/\sqrt5-1 \le fib(H(n)+2)-1 = S(H(n)) \le n$
+
+$\Rightarrow (H(n)+2)\log\phi \lt \log(n+1)+\Theta(n)$
+$\blacksquare$
+
+---
+## 木の構築
+```haskell
+mktree :: Ord a=> [a] -> Tree a
+mktree [] = Null
+mktree (x:xs) = Node (mktree ys) x (mktree zs)
+    where   (ys,zs) = partition (<x) xs
+partition f xs = (filter f xs, filter (not.f) xs)
+```
+* リストを丁度半分に分割できる時 ... $\small T(n+1) = 2T(n/2)+\Theta(n)$
+$\Rightarrow T(n) = \Theta(n\log n)$
+* リストxsを[]とxsに分割する時 ... $\small T(n+1) = T(n) + \Theta(n)$
+$\Rightarrow T(n) = \Theta(n^2)$
+
+---
+## 平衡木の構築
+部分木の高さ情報をノードに維持する
+```haskell
+data Tree a = Null | Node Nat (Tree a) a (Tree a)
+```
+```haskell
+height Null = 0
+height (Node h _ _ _) = h
+```
+```haskell
+node :: Tree a -> a -> Tree a -> Tree a
+node l x r = Node h l x r where h = 1 + max (height l) (height r)
+```
+
+---
+```haskell
+mktree :: Ord a => [a] -> Tree a
+mkTree = foldr insert Null
+
+insert x Null = node Null x Null
+insert x (Node h l y r)
+    | x < y = balance (insert x l) y r
+    | x == y = Node h l y r
+    | y < x = balance l y (insert x r)
+```
+balance関数：高さ情報を使って平衡を維持 (3ケースを考慮)
+
+1. $height\ l = height\ r + 2$
+
+---
+$\scriptsize height\ r = height\ l - 2 = height\ ll - 1 \le height\ rl \le height\ ll$
+```haskell
+balance l x r = rotr (node l x r) -- 右回転のbalance関数
+rotr (Node _ (Node _ ll y rl) x r) = node ll y (node rl x r)
+```
+![fit](fig-rotr.png)
+$\small |height\ ll - height(node\ rl\ x\ r)|$
+$\small = |height\ ll - 1 - height\ rl\ \max\ height\ r|$
+$\small = |height\ ll - 1 - height\ rl|$
+$\small \le 1$
+
+---
+2. $\small height\ ll \lt height\ rl$
+$\small \Rightarrow height\ ll+1 = height\ rl　(\because lは平衡)$
+
+```haskell
+balance l x r = rotr (node (rotl l) x r)
+rotl (Node _ ll y (Node _ lrl z rrl)) = node (node ll y lrl) z rrl
+```
+![fit](fig-rotl.png)
+
+3. $\small height\ r=height\ l+2$ ;上と同様
+
+---
+```haskell
+-- balance関数全体
+bias :: Tree a -> Int
+bias (Node _ l x r) = height l = height r
+
+balance :: Tree a -> a -> Tree a -> Tree a
+balance t1 x t2
+    | abs (h1-h2) <= 1 = node t1 x t2
+    | h1 == h2+2       = rotateR t1 x t2
+    | h2 == h1+2       = rotateL t1 x t2
+    where h1=height t1; h2 = height t2
+
+rotateR t1 x t2 = if 0 <= bias t1 then rotr (node t1 x t2)
+                                  else rotr (node (rotl t1) x t2)
+rotateL t1 x t2 = if bias t2 <= 0 then rotl (node t1 x t2)
+                                  else rotl (node t1 x (rotr t1))
+```
+高さが2以上異なる木の平衡関数gbalanceは次節でも使う
+
+---
+## 高さが2以上異なる木の平衡
+* 前提：$\small h1 \le h2+2$
 
 
 ---
 # Excercise
+## 4-1.1
+floor関数の性質　　$n \le \lfloor r \rfloor \iff n \le r \ \ \small(n \in N, r \in R)$
+を使って　　$a+1\lt b$の時のみ　　$a \lt (a+b)\ div\ 2 \lt b$
+となることを証明せよ
+
+$\small a \lt div\ (a+b)\ 2 \lt b$
+$\small a \lt \lfloor\frac{a+b+1}{2}\rfloor \lt b \ \ (\because floor)$
+
+$\small \lfloor\frac{a+b+1}{2}\rfloor \lt b$　　を満たすには，$\small a+1 < b$　　が必要
+
+---
+## 4-1.2
+ceiling関数の性質　　$r \le \lceil n \rceil \iff r \le n \ \ \small(n \in N, r \in R)$
+を使って　　$n \lt 2^h$の時に　　$\lceil \log(n+1)\rceil\le h$
+となることを証明せよ
+
+$\small n < 2^h$
+$\small \log n \lt h$
+$\small \log (n+1) \lt h \iff \lceil\log(n+1)\rceil\le h$
+
+---
+## 4-2
+```haskell
+-- a < m < b, f(a) < t <= f(b)を満たすものとする
+head $ [x | x <- [a+1..m], t <= f x] ++ [x | x <- [m+1..b], t <= f x]
+```
+f(m) < tの時，第一項リストは空にもかかわらずsmallest関数は値を返す．なぜ
+
+
+smallest関数は範囲内に解がない時bを返す実装になっている
+
+---
+## 4-3
+最悪条件でsmallest関数が必要とするステップ数$\small n (=b-a+1)$を，
+$\scriptsize T(2) = 0$
+$\scriptsize T(n) = T(\lceil(n+1)/2\rceil)+1 \ \ \ \ (n\gt2)$
+$\scriptsize T(n) = \lceil\log(n+1)\rceil$　　を用いて求めよ
+
+$\scriptsize T(n) = T(\lceil(n+1)/2\rceil)+1 = \lceil \log((n+1)/2+1)\rceil +1$
+$\scriptsize\rightarrow$
+
+---
+## 4-4
+4-3で
+
+---
+## 4-5
+図4.1上で472のインデックスは？
+
+---
+## 4-6
+$f(x,y) = x^3+y^3$のとき，saddleback関数での$t=1729$の探索結果は？
+
+---
+## 4-7
+flatten関数を線形時間にするのにaccumulateを使う．flatcatを再帰定義する
+```haskell
+flatcat :: Tree a -> [a] -> [a]
+flatcat t xs = flatten t ++ xs
+
+flatten = flatcat t []
+```
+
+```
+flatten :: Tree a -> [a]
+flatten (Node tl a tr) = fla
+```
+
+---
+## 4-8
+全ての二分木$t$について  $\small height(t) \le size(t) \lt 2^{height(t)}$を証明
+
+1. 全要素が左部分木のみにある場合が最悪条件：$\scriptsize height(t) \le size(t)$
+
+2. 全ての要素がバランスしている時が最悪条件：
+$\scriptsize size(t) = 2^m$の時，$\scriptsize height(t) = m+1$
+$\scriptsize 2^m \lt size(t) \lt 2^{m+1}$の時，$\scriptsize height(t) = m+1$
+
+$\scriptsize\therefore height(t) \le size(t) \lt 2^{height(t)}$
+
+---
+## 4-9
+2回走査している実装を，1回操作にする
+```haskell
+partition p xs = (filter p xs, filter (not.p) xs)
+```
+
+```haskell
+partiton p xs = (positives, negatives)
+    where
+    (positives, negatives) = foldr f ([],[]) xs
+    f (ps,ns) x
+        | p x = (x:ps, ns)
+        | not (p x) = (ps,x:ns)
+```
+
+---
+## 4-10
+Tree [a] を構築する
+
+---
+## 4-11
+best case  : $\small B(n+1) = 2B(n/2)+\Theta(n)$
+worst case : $\small W(n+1) = W(n)+\Theta(n)$
+$二分探索木構築時のB(n), W(n)$を求めよ
+
+$B(n) = 2^{n/2}B(0) + n/2\Theta(n/2^n)$
+$B(n) = n\Theta(\log n)$
+$B(n) = \Theta(n\log n)$
+
+$W(n) = W(0) + n\Theta(n) \rightarrow \Theta(n^2)$
+
+---
+## 4-12
+$\log{n!} = \Omega(n\log{n})$,　$W(n) = \Theta(n^2)$　を示す
+
+
+---
+## 4-13
+combineの二つ目の定義として，
+```haskell
+flatten (combine t1 t2) = flatten t1 ++ flatten t2
+```
+次の章を見越して，次のmergeを定義せよ
+```haskell
+flatten (union t1 t2) = merge (flatten t1) (flatten t2)
+ ```
+
+ --- 
+ ## 4-14-1
+ union関数の一例：木の一つを展開し，要素を別の木に一つずつ挿入する方法
+ ```haskell
+ union :: Ord a => Set a -> Set a -> Set a
+ union t1 t2 = foldr insert t1 (flatten t2)
+ ```
+ t1の要素数 = m，t2の要素数 = n　の時，union関数の計算量は？
+
+
+ --- 
+ ## 4-14-2
+ union関数の一例：両方の木を展開・マージしてソートされたリストを作成してから木を構築する．（配列を使えば線形時間でリスト→木の変換が可能）
+ 
+ ```haskell
+ union t1 t2 = build (merge (flatten t1) (flatten t2))
+ build xs = from (0,n) (listArray (0,n-1) where n = length xs)
+ ```
+1. from関数を定義せよ．
+1. union関数の計算量は？
+
+---
+## 4-15
+deleteMin関数，combine関数の定義でbalance関数が正当化されるのはなぜ？
+
+---
+## 4-16
+balanceLの定義
+
+---
+## 4-17
+次のpair関数を使って，```split x```関数の線形版を一行で定義する
+```haskell
+pair f (x,y) = (f x, f y)
+```
+
+
+```haskell
+split :: Ord a => a -> Set a -> (Set a, Set a)
+split x = pair mkTree . partiton (<=x) . flatten
+```
