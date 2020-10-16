@@ -15,13 +15,10 @@ paginate: true
 二つの例をみた後，二分探索をデータ構造（二分探索木）にカプセル化する
 
 ---
-# 章立て
 ### 4章1節 : 一次元探索問題
 ### 4章2節 : 二次元探索問題
 ### 4章3節 : 二分探索木
 ### 4章4節 : Dynamic Sets
-
-
 
 ---
 # 4章1節 : 一次元探索問題
@@ -43,7 +40,7 @@ search f t = [x | x <- [0..t], t == f x]
 # 4-1 部分問題で考える
 ```haskell
 search f t = seek (0,t) where
-    seek (a,b) = [x | x <- [a,b], t == f x]
+    seek (a,b) = [x | x <- [a .. b], t == f x]
 ```
 seekを書き下す
 ```haskell
@@ -67,8 +64,7 @@ search f t = seek (0,t)
                      where m = choose (a,b)
                            choose (a,b) = (a+b) `div` 2 -- 2つの部分問題をバランスする
 ```
-* 計算時間 : $O(\log{t})$．
-* 関数の型定義に問題あり．e.g. $\scriptsize f(n) = 2^n,\ n = 1024$
+* 計算時間 : $\small O(\log{t})$．
 
 ---
 # 4-1 二分探索1の問題点
@@ -89,8 +85,8 @@ bound f t = if t <= f 0 then (-1,0) else (div b 2, b)
     where b = until done (*2) 1
           done b = t <= f b
 ```
-* 評価回数 ... $O(\log(\log n))$
-    なお，最悪時には$O(\log n)$ : e.g. $\scriptsize f = id$
+* 評価回数 ... $\small O(\log(\log n))$
+    最悪時には　$\small O(\log n)$ : e.g. $\scriptsize f = id$
 * $\scriptsize t \le b$より，区間$\scriptsize [a+1,b]$で$\scriptsize t \le x$を満たす最小の$\scriptsize x$は存在する
 
 ---
@@ -126,9 +122,9 @@ smallest (a,b) f t | a+1 == b = b
 ---
 # 4-1 二分探索2の計算量
 #### $f(n)$について，$T(n)$を考える
-$
+$\small 
 T(2) = 0 \\
-T(n) = T(n/2) + 1
+T(n) = 1+T(n/2)
      = k + T(n/2^k) \le \lceil \log{n} \rceil
 $
 $
@@ -139,7 +135,23 @@ $
 fの計算時間が一定の場合，ステップ数は $\small\Theta(\log{t})$
 
 ---
+部分問題がいずれもn/2でない場合
+Exercise 4-3
+
+次章で登場する$\scriptsize T(n) = 2T(n/2) + \Theta(n)$については：
+$\small 
+T(n) = cn + 2T(n/2) \\
+    = cn+2(cn/2 + 2T(n/4)) \\
+    = 2cn + 4T(n/4) \\
+    = ... \\
+    = kcn + 2^kT(n/2^k) \\
+    = cn\lceil \log n \rceil + \Theta(2^{\lceil \log n \rceil}) \\
+    \longrightarrow \Theta(n\log n)
+$　線形対数時間
+
+---
 # 4-1 課題
+Exercise 4-1 ~ 4-4
 
 ---
 # 4章2節 二次元探索
@@ -273,12 +285,30 @@ $\small T(m,n) = \log n + T(\frac{m}{2},n) = \Theta(\log m\times\log n)$
 $T(m,n) = \log n+2T(\frac{m}{2},\frac{n}{2}) = \Theta(m\log(1+\frac{n}{m}))$
 
 いずれの探索アルゴリズムも計算量は
-$\small\Omega(m\log(1+\frac{n}{m})+n\log(1+\frac{m}{n}))
-\scriptsize　　決定木で証明可能(教科書参照)$
+$\small\Omega(m\log(1+\frac{n}{m})+n\log(1+\frac{m}{n}))$
 
+--- 
+#### Proof. 
+$\small 
+A(m,n)=\Sigma^{m}_{k=0}
+\left(\begin{array}{c}m\\k\end{array}\right)
+\left(\begin{array}{c}n\\k\end{array}\right)
+=\left(\begin{array}{c}m+n\\n\end{array}\right) \\
+\scriptsize \because ヴァンデルモンドの畳み込み$
+
+よって
+$\small 
+\log{A(m,n)} = \Theta(m\log(1+n/m) + n\log(1+m/n))
+$
 
 ---
-# 4-3 二分探索木
+# 4-2 課題
+Exercise 4-5, 4-6
+
+---
+# 4章3節 : 二分探索木
+
+---
 ```haskell
 data Tree a = Null | Node (Tree a) a (Tree a)
 ```
@@ -446,9 +476,113 @@ rotateL t1 x t2 = if bias t2 <= 0 then rotl (node t1 x t2)
 高さが2以上異なる木の平衡関数gbalanceは次節でも使う
 
 ---
-## 高さが2以上異なる木の平衡
-* 前提：$\small h1 \le h2+2$
+## 高さが2以上異なる木t1,t2の平衡
+* 前提：$\small h1 \gt h2+2$
+t1の右部分木$r=r_k$について　$\small 0\le height\ r - height\ t2 \le 1$
+を満たす部分木は確実に存在する
+```haskell
+balanceR :: Set a -> a -> Set a -> Set a
+balanceR (Node _ l y r) x t2 = if height r >= height t2+2
+    then balance l y (balanceR r x t2)
+    else balance l y (node r x t2)
 
+type Set a = Tree a
+```
+balanceR t1 x t2 ... $\small O(h1-h2)$
+
+---
+gbalanceとして以下を得る
+```haskell
+gbalance :: Set a -> a -> Set a -> Set a
+gbalance t1 x t2
+    | abs (h1-h2) < 2 = balance  t1 x t2
+    | h1 > h2+2       = balanceR t1 x t2
+    | h1+2 < h2       = balanceL t1 x t2
+```
+* balance関数 ... 定数時間
+* gbalance関数 ... 挿入は対数時間，構築は$\small\Theta(n\log{n})$
+
+Q. $\Theta(n\log{n})$より高速にリストから木を構築できる？
+
+---
+```haskell
+sort :: Ord a => [a] -> [a]
+sort = flatten . mktree
+```
+比較回数 $\small B(n) \ge \Omega(n\log{n})　\because$ 決定木とスターリン近似
+
+A. $\small \Theta(n\log{n})$より高速にはできない
+
+---
+# 4-3 課題
+Exercise 4-7 ~ 4-16
+
+---
+# 4章4節 : 動的木 (Dynamic Sets)
+
+---
+成長・縮退可能な木の集合 ... add, delete, elem，union, split
+
+```haskell
+member :: Ord a => a -> Set a => Bool
+member x Null = False
+member (Node _ l x r) | x < y  = member x l
+                      | x == y = True
+                      | x > y  = member x r
+
+delete :: Ord a => a -> Set a => Set a
+delete x Null = Null
+delete (Node _ l x r) | x < y  = balance (delete x l) y r
+                      | x == y = combine l r
+                      | x > y  = balance l y (delete x r)
+```
+---
+## 高さの差が高々1の平衡木の連結
+```haskell
+deleteMin :: Ord a => Set a -> (a,Set a)
+deleteMin (Node _ Null x r) = (x,r)
+deleteMin (Node _ l x r) = (y,balance t x r) where (y,t) = deleteMin l
+
+combine :: Ord a => Set a -> Set a -> Set a
+combine l Null = l
+combine Null r = r
+combine l r = balance l x t where (x,t) = deleteMin r
+```
+高さの差が2以上の木の連結ついてはgbalanceを用いる
+大きさがそれぞれm,nの木の連結 ... $\small O(\log{n}+\log{m})$
+
+---
+```haskell
+-- 木の分割 --
+data Piece a = LP (Set a) a | RP a (Set a)
+
+-- split x xs = (ys,zs) ⇄ combine ys zs = xs
+split :: ord a => a -> Set a -> (Set a, Set a)
+split x t = sew (pieces x t)
+```
+一度ピースに分解してから，それぞれを縫い合わせることで実現
+
+![fit](fig-pieces.png)
+
+---
+
+```haskell
+pieces :: Ord a => a -> Set a -> [Piece a]
+pieces x t = addPiece t [] where
+    addPiece Null ps = ps
+    addPiece (Node _ l y r) ps | x < y = addPiece l (RP y r : ps)
+                               | x >=y = addPiece r (LP l y : ps)
+
+sew :: [Piece a] -> (Set a,Set a)
+sew = foldr step (Null,Null)
+    where step (t1,t2) (LP t x) = (gbalance t x t1, t2)
+          step (t1,t2) (RP x t) = (t1, gbalance t2 x t)
+```
+split, pieces, saw ... $\small O(h)$
+
+---
+# 4-4 課題
+Exercise 4-17
 
 ---
 # Excercise
