@@ -25,16 +25,14 @@ paginate: true
 
 ---
 # 4-1 線形探索
-#### 自然数の狭義単調増加関数 $f (x < y \Rightarrow f x < f y)$
-```
-t = f x
-```
-となるxを探すことを考えると...
+#### 自然数の狭義単調増加関数 $f\ \small(x < y \Rightarrow f(x) < f(y))$
+t = f xとなるxを探すことを考えると...
 ```haskell
 search :: (Nat -> Nat>) -> Nat -> [Nat] -- 線形探索
-search f t = [x | x <- [0..t], t == f x]
+search f t = [x | x <- [0 .. t], t == f x]
 ```
 単一要素リストあるいは空リストを得る．
+より良い解法を二つ紹介
 
 ---
 # 4-1 部分問題で考える
@@ -42,7 +40,7 @@ search f t = [x | x <- [0..t], t == f x]
 search f t = seek (0,t) where
     seek (a,b) = [x | x <- [a .. b], t == f x]
 ```
-seekを書き下す
+seekを改良
 ```haskell
 seek (a,b) = [x | x <- [a .. m-1], t == f x] -- t < f m の時のみ
           ++ [m | t == f m]
@@ -85,11 +83,13 @@ bound f t = if t <= f 0 then (-1,0) else (div b 2, b)
     where b = until done (*2) 1
           done b = t <= f b
 ```
-* 評価回数 ... $\small O(\log(\log n))$
-    最悪時には　$\small O(\log n)$ : e.g. $\scriptsize f = id$
-* $\scriptsize t \le b$より，区間$\scriptsize [a+1,b]$で$\scriptsize t \le x$を満たす最小の$\scriptsize x$は存在する
+* 評価回数 ... p+1回
+最良時 : $\small O(\log(\log n)) ... \scriptsize f(n)=2^n$
+    最悪時 : $\small O(\log n) ... \scriptsize f = id$
+
 
 ---
+$\scriptsize t \le b$より，区間$\scriptsize [a+1,b]$で$\scriptsize t \le x$を満たす最小の$\scriptsize x$は存在する
 ```haskell
 search f t = if f x == t then [x] else []
     where x = smallest (bound f t)
@@ -100,9 +100,9 @@ search f t = if f x == t then [x] else []
 smallest (a,b) = head ( [x | x <- [a+1 .. m], t <= f x] ++
                         [x | x <- [m+1 .. b], t <= f x] )
 ```
-したがって次の関数を得る
 
 ---
+関数の全容
 ```haskell
 -- 二分探索 (ver 2)
 search :: (Nat -> Nat) -> Nat -> [Nat]
@@ -114,10 +114,9 @@ smallest (a,b) f t | a+1 == b = b
                    | otherwise = smallest (m,b) f t
                    where m = (a+b) `div` 2
 ```
-#### smallest関数
 * $\scriptsize a \lt x \le b$に解がなければbを返す
 * 比較回数は1回．最悪2回
-* $\scriptsize f(a)$は評価されることがないので$\scriptsize f(-1) = -\infty$も呼ばれない，
+* $\scriptsize f(a)$は評価されることがないので$\scriptsize f(-1) = -\infty$も呼ばれない
 
 ---
 # 4-1 二分探索2の計算量
@@ -149,9 +148,10 @@ T(n) = cn + 2T(n/2) \\
     \longrightarrow \Theta(n\log n)
 $　線形対数時間
 
----
+<!--
 # 4-1 課題
 Exercise 4-1 ~ 4-4
+-->
 
 ---
 # 4章2節 二次元探索
@@ -200,15 +200,14 @@ e.g. $\scriptsize f(x,y)=x^2+3^y, t=20259$
 p = smallest (-1,t) (\y -> f (0,y)) t
 q = smallest (-1,t) (\x -> f (x,0)) t
 ```
-$\small\longrightarrow\Theta(t)+\Theta(p+q) \simeq\Theta(t) \ \ \scriptsize(\because p,q < t)$
+$\small\longrightarrow\Theta(\log{t})+\Theta(p+q) \simeq\Theta(\log{t}) \ \ \scriptsize(\because p,q < t)$
 
 ---
 # 其の参：分割統治サドルバック
 ![fit](4-2.png)
 $$\tiny
-f(x,y) < t \rightarrow 　　黄色領域を探索\\
-f(x,y) = t \rightarrow 灰・黄色領域を維持\\
-f(x,y) > t \rightarrow 　　灰色領域を探索
+f(x,y) < t \rightarrow 　　白色領域を破棄 \\
+f(x,y) = t \rightarrow 左下・右上領域を破棄
 $$
 
 ---
@@ -223,15 +222,15 @@ $T(m,n) = 1+T(\frac{m}{2},\frac{n}{2}) + T(\frac{m}{2},n),\scriptsize\ horizonta
 $T(m,n) = 1+T(\frac{m}{2},\frac{n}{2}) + T(m,\frac{n}{2}),\scriptsize\ vertical\ cut \ (m \gt n)$
 
 ---
-$\small U(i,j) = T(2^i,2^j), i \le j \ \ \scriptsize(=horizontal)$　と定義する
+$\small U(i,j) = T(2^i,2^j), i \le j \ \ \scriptsize(=horizontal)$　として考える
 
 $\small U(0,j) = j$
-$\small U(i+1,j+i) = 1+U(i,j) + U(i,j+1)$
+$\small U(i+1,j+1) = 1+U(i,j) + U(i,j+1)$
 
 $\scriptsize U(i,j) = 2^if(i,j)-1$　とおくと...
 
 $f(0,j) = j+1$
-$2f(i+i,j+1) = f(i,j) + f(i,j+1)$　　を得る
+$2f(i+1,j+1) = f(i,j) + f(i,j+1)$　　を得る
 
 $\longrightarrow$ $f$は$i,j$に関して線形関数：$\small f(i,j) = \frac{i}{2}+j+1$
 
@@ -249,8 +248,10 @@ r = (y1+y2) `div` 2
 ```
 
 ---
-* $\small z = f(x,r) \longrightarrow$ x行を削除して灰色黄色領域を探索
-* $\small otherwize \longrightarrow$ 灰色黄色領域を探索
+$y_1 - y_2 \le x_2 - x_1$の時を考える(列の方が多い時)
+* $\small z\lt f(x,r) \rightarrow$ 灰色黄色領域を探索
+* $\small z\gt f(x,r) \rightarrow$ rの下側を探索
+* $\small z = f(x,r) \longrightarrow$ x行を削除して灰色黄色領域を探索 
 ![fit](fig4-3.png)分割統治法
 
 
@@ -301,12 +302,16 @@ $\small
 \log{A(m,n)} = \Theta(m\log(1+n/m) + n\log(1+m/n))
 $
 
----
+<!--
 # 4-2 課題
 Exercise 4-5, 4-6
+-->
 
 ---
 # 4章3節 : 二分探索木
+
+前章のランダムアクセスリストとは異なり，  
+値は葉ではなくノード（ラベル）に記録
 
 ---
 ```haskell
@@ -349,7 +354,7 @@ height (Mode l x r) = 1 + max (height l) (height r)
 $\small\lceil\log(n+1)\rceil \le h \le n \lt 2^h$を満たす．
 
 左/右部分木の高さの差が最大でも1のとき，木はバランスしている．
-（他にもバランスの定義は色々あるけどね）
+（他にもバランスの定義は色々ある）
 
 木tが平衡木ならば，　$\small h \le 1.4404\log(n+1)+\Theta(1)$
 
@@ -513,10 +518,10 @@ sort = flatten . mktree
 
 A. $\small \Theta(n\log{n})$より高速にはできない
 
----
+<!---
 # 4-3 課題
 Exercise 4-7 ~ 4-16
-
+-->
 ---
 # 4章4節 : 動的木 (Dynamic Sets)
 
@@ -622,14 +627,17 @@ smallest関数は範囲内に解がない時bを返す実装になっている
 最悪条件でsmallest関数が必要とするステップ数$\small n (=b-a+1)$を，
 $\scriptsize T(2) = 0$
 $\scriptsize T(n) = T(\lceil(n+1)/2\rceil)+1 \ \ \ \ (n\gt2)$
-$\scriptsize T(n) = \lceil\log(n+1)\rceil$　　を用いて求めよ
+$\scriptsize T(n) = \lceil\log(n-1)\rceil$　　を用いて求めよ
 
-$\scriptsize T(n) = T(\lceil(n+1)/2\rceil)+1 = \lceil \log((n+1)/2+1)\rceil +1$
-$\scriptsize\rightarrow$
+$\scriptsize 
+T(n) = T(\lceil(n+1)/2\rceil)+1 = \lceil \log(n-1)\rceil \\
+\rightarrow 
+$
 
 ---
 ## 4-4
-4-3で
+4-3で，$\small f(a) \lt t \le f(b)$のとき，
+$\small t\le f(x)$の形で$\small\lceil \log(n-1) \rceil$の比較を要するsmallest (a,b) f tを計算するアルゴリズムを示す．
 
 ---
 ## 4-5
