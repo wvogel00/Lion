@@ -82,3 +82,75 @@ gridf (x,y)
             ,[519,621,752,797,801,827,833,865,917,924,945,998]
             ,[521,693,768,799,821,829,841,869,923,947,985,999]
             ]
+
+
+------simpleな木--------------------------------------------
+data Tree a = Nul | Nod (Tree a) a (Tree a)
+    deriving Show
+
+mktree' :: Ord a => [a] -> Tree a
+mktree' [] = Nul
+mktree' (x:xs) = Nod (mktree' ys) x (mktree' zs)
+    where (ys,zs) = partition (<x) xs
+partition p xs = (filter p xs, filter (not.p) xs)
+
+
+------平衡木に対応--------------------------------------------
+data BalancedTree a = Null | Node Nat (BalancedTree a) a (BalancedTree a)
+    deriving Show
+
+height :: BalancedTree a -> Nat
+height Null = 0
+height (Node h _ _ _) = h
+
+node :: BalancedTree a -> a -> BalancedTree a -> BalancedTree a
+node l x r = Node h l x r where h = 1 + max (height l) (height r)
+
+mktree :: Ord a => [a] -> BalancedTree a
+mktree = foldr insert Null
+
+insert :: Ord a => a -> BalancedTree a -> BalancedTree a
+insert x Null = node Null x Null
+insert x (Node h l y r)
+    | x < y = balance (insert x l) y r
+    | x == y = Node h l y r
+    | y < x = balance l y (insert x r)
+
+bias :: BalancedTree a -> Int
+bias (Node _ l x r) = height l - height r
+
+balance :: BalancedTree a -> a -> BalancedTree a -> BalancedTree a
+balance t1 x t2
+    | abs (h1-h2) <= 1 = node t1 x t2
+    | h1 == h2+2       = rotateR t1 x t2
+    | h2 == h1+2       = rotateL t1 x t2
+    where h1=height t1; h2 = height t2
+
+rotateR t1 x t2 = if 0 <= bias t1 then rotr (node t1 x t2)
+                                  else rotr (node (rotl t1) x t2)
+rotateL t1 x t2 = if bias t2 <= 0 then rotl (node t1 x t2)
+                                  else rotl (node t1 x (rotr t1))
+
+rotr (Node _ (Node _ ll y rl) x r) = node ll y (node rl x r)
+rotl (Node _ ll y (Node _ lrl z rrl)) = node (node ll y lrl) z rrl
+
+
+-----gbalance--------------------------------------------
+type Set a = BalancedTree a
+
+balanceR :: Set a -> a -> Set a -> Set a
+balanceR (Node _ l y r) x t2 = if height r >= height t2+2
+    then balance l y (balanceR r x t2)
+    else balance l y (node r x t2)
+
+balanceL :: Set a -> a -> Set a -> Set a
+balanceL (Node _ l y r) x t2 = if height l >= height t2+2
+    then balance (balanceL l x t2) y r
+    else balance (node l x t2) y r
+
+gbalance :: Set a -> a -> Set a -> Set a
+gbalance t1 x t2
+    | abs (h1-h2) < 2 = balance  t1 x t2
+    | h1 > h2+2       = balanceR t1 x t2
+    | h1+2 < h2       = balanceL t1 x t2
+    where h1 = height t1; h2 = height t2

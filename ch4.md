@@ -240,7 +240,13 @@ $U(i,j) = 2^i(j-\frac{i}{2}+1)-1$　を得る
 
 $\therefore T(m,n) = 2^{\log m}(\log n-\frac{\log m}{2}+1)-1 \le m\log{\frac{2n}{\sqrt{m}}}$
 
-$\small m,n$一方が極端に小さい場合，サドルバックより分割統治法．
+---
+$\small m,n$一方が極端に小さい場合，サドルバックより分割統治法がbetter．
+分割統治法をもう少し改良する．
+
+__前提__
+1. 探索範囲を$\small(x_1,y_1),(x_2,y_2)$領域に限定
+2. $\small y_1-y_2 \le x_1-x_2$
 
 ```haskell
 x = smallest (x1 - 1,x2) (\x -> f (x,r)) t
@@ -248,12 +254,13 @@ r = (y1+y2) `div` 2
 ```
 
 ---
-$y_1 - y_2 \le x_2 - x_1$の時を考える(列の方が多い時)
-* $\small z\lt f(x,r) \rightarrow$ 灰色黄色領域を探索
-* $\small z\gt f(x,r) \rightarrow$ rの下側を探索
-* $\small z = f(x,r) \longrightarrow$ x行を削除して灰色黄色領域を探索 
-![fit](fig4-3.png)分割統治法
-
+$\small x_1 \le x \le x_2$の範囲に条件を満たす$x$があれば，
+$\small t \le f(x,r)$となる$t$が存在．それ以外は$x = x_2$とする
+* $\small t \lt f(x,r) \rightarrow$ 灰色黄色領域を探索
+* $\small t \gt f(x,r) \rightarrow$ rの下側を探索
+* $\small t = f(x,r) \longrightarrow$ x行を削除&灰色黄色領域を探索 
+![fit](fig4-3.png)分割統治法．図で$\small z = f(x,r)$
+<!--これにより，対数時間で配列の凡そ半分を除去できる-->
 
 ---
 ```
@@ -280,26 +287,61 @@ sb_search' f t = from (0,p) (q,0) where
 ```
 ---
 # 計算量 $\scriptsize(m \le n)$
-* best case
+* **best case**
 $\small T(m,n) = \log n + T(\frac{m}{2},n) = \Theta(\log m\times\log n)$
-* worst case
+* **worst case**
 $T(m,n) = \log n+2T(\frac{m}{2},\frac{n}{2}) = \Theta(m\log(1+\frac{n}{m}))$
 
-いずれの探索アルゴリズムも計算量は
+いずれの探索アルゴリズムも計算量の下限は
 $\small\Omega(m\log(1+\frac{n}{m})+n\log(1+\frac{m}{n}))$
+
+---
+* $\small m=n \rightarrow \Omega(m+n)$　サドルバッグ．
+* $\small m \lt n \rightarrow \Omega(m\log(m+n))$　
+    * $\scriptsize x \le \log(1+x)\ \ (0 \le x \le 1の時)$
 
 --- 
 #### Proof. 
-$\small 
+計算量の下限は，次節の後半で触れる決定木によって証明される
+問題に対して，$\small A(m,n)$個の異なる解があると仮定する．
+
+$\scriptsize
+A(1,1) = 1 \ \ ([],A_{11})\\
+A(2,2) = 6 \ \ ([],A_{ij}, [A_{1i}A_{2j}]) \ \ (\because 狭義単調増加関数)\\
+$
+
+$\scriptsize
+f(x,y) \rightarrow 3\ \ (\because (<), (==), (>))
+$　であるから
+$\scriptsize
+h \ge \log_3A(m,n)
+$
+
+$\small A(m,n)$を計算することで下限がもとまる
+
+---
+$\small 0 \le x < n, 0 \le y < m, f(x,y) = z$
+を，左上から右下まで階段状に対応させる
+
+n回の下移動 & m回の右移動　
+
+$\scriptsize
+A(m,n) := \left( \begin{array}{c} m+n\\n\end{array}\right)$
+
+---
+別の方法：k個の解があると仮定：
+$\scriptsize
 A(m,n)=\Sigma^{m}_{k=0}
 \left(\begin{array}{c}m\\k\end{array}\right)
 \left(\begin{array}{c}n\\k\end{array}\right)
 =\left(\begin{array}{c}m+n\\n\end{array}\right) \\
-\scriptsize \because ヴァンデルモンドの畳み込み$
+\scriptsize \because ヴァンデルモンドの畳み込み：
+\Sigma^r_{k=0}{}_mC_k\cdot{}_nC_{r-k} = {}_{m+n}C_r
+$
 
 よって
 $\small 
-\log{A(m,n)} = \Theta(m\log(1+n/m) + n\log(1+m/n))
+\log{A(m,n)} = \Omega(m\log(1+n/m) + n\log(1+m/n))
 $
 
 <!--
@@ -313,10 +355,13 @@ Exercise 4-5, 4-6
 前章のランダムアクセスリストとは異なり，  
 値は葉ではなくノード（ラベル）に記録
 
----
 ```haskell
 data Tree a = Null | Node (Tree a) a (Tree a)
 ```
+
+木は分岐構造に分類される
+
+---
 <!--前章のランダムアクセスリストとは異なり，値は葉ではなく節に記録-->
 ```haskell
 size :: Tree a -> Nat
@@ -328,6 +373,9 @@ flatten :: Tree a -> [a]
 flatten Null = []
 flatten (Node l x r) = flatten l ++ [x] ++ flatten r
 ```
+flattenは木の大きさに対して線形ではない（演習3-8）
+flattenが単調増加リストを返すとき，木は二分探索木である
+
 <!--3-8でみたようにflattenは線形ではない．詳しくはExerciseで-->
 二分探索木：左部分木の要素 < 節の要素 < 右部分木の要素
 
@@ -341,7 +389,7 @@ search key k (Node l x r)
     | key x == k = Just x
     | key x  > k = search key k l
 ```
-最悪の場合でも木の高さに比例した計算量 $\rightarrow O(\log n)$を保証
+最悪の場合は木の高さに比例した計算量 $\rightarrow O(\log n)$を保証
 ```haskell
 height :: Tree a -> Nat
 height Null = 0
@@ -351,12 +399,17 @@ height (Mode l x r) = 1 + max (height l) (height r)
 ---
 ## 木の高さとサイズの関係
 同サイズの木が同じ高さである必要はなく，高さhとサイズnは
-$\small\lceil\log(n+1)\rceil \le h \le n \lt 2^h$を満たす．
+$\small\
+lceil \log(n+1) \rceil \le h \le n \lt 2^h,
+h\ge \lceil \log(n+1) \rceil$を満たす．
 
 左/右部分木の高さの差が最大でも1のとき，木はバランスしている．
-（他にもバランスの定義は色々ある）
+（他にもバランスの定義は色々あるらしい...）
 
-木tが平衡木ならば，　$\small h \le 1.4404\log(n+1)+\Theta(1)$
+バランス状態での高さは，$\small \lceil \log(n+1) \rceil$である必要はないが，
+適度に小さく，
+$\small h \le 1.4404\log(n+1)+\Theta(1)$
+で与えられる
 
 ---
 #### Proof.
@@ -365,27 +418,31 @@ $S(h)$ ... 高さhの木がとりうる最小サイズ
 
 $\rightarrow S(H(n)) \le n$
 
-下限を定める関数fで上限も置き換えられる．
-$\small f(n) \le S(n)$の時，
-$\small f(H(n)) \le n \Rightarrow  H(n) \le f^{-1}(n)$
+$\small S(n)$に下限$\small f(n)$を設けることで，$\small H(n)$の上限を求める
+$\small S(n) \ge f(n)$の時，
+$\small n \ge f(H(n)) \Rightarrow  H(n) \le f^{-1}(n)$
 
 ---
 #### Proof. 続き
-case Null ... n=0, S(0) = 0
-case h=1 ... S(1) = 1
-case others ... S(h+2) = S(h+1) + S(h) + 1
+* $\small Null ... h=0, S(0) = 0$
+* $\small h=1 ... S(1) = 1$
+* $\small S(h+2) = S(h+1) + S(h) + 1 \longrightarrow S(h) = Fib(h+2)-1$
 
-S(h) = fib(h+2)-1
-fibの定義を見る
+**fibonacci数**
+$\scriptsize
+Fib(0) = 0 \\
+Fib(1) = 1 \\
+Fib(k+2) = Fib(k+1) + Fib(k) \\
+$
 
 ---
 #### Proof. 続き
 $\small x^2-x-1=0$の二つの解，$\small \phi=\frac{1+\sqrt{5}}{2},\ \ \psi\frac{1-\sqrt{5}}{2}$
 
 $\small fib(n) = (\phi^n - \psi^n)/\sqrt5$
-$\small fib(n) = (\phi^n - 1)/\sqrt5 \ \ \scriptsize(\because \psi < 1)$
+$\small fib(n) > (\phi^n - 1)/\sqrt5 \ \ \scriptsize(\because \psi < 1)$
 
-したがって
+したがって前ページの式を適用して，
 
 $\small (\phi^{H(n)+2}-1)/\sqrt5-1 \le fib(H(n)+2)-1 = S(H(n)) \le n$
 
@@ -401,14 +458,14 @@ mktree (x:xs) = Node (mktree ys) x (mktree zs)
     where   (ys,zs) = partition (<x) xs
 partition f xs = (filter f xs, filter (not.f) xs)
 ```
-* リストを丁度半分に分割できる時 ... $\small T(n+1) = 2T(n/2)+\Theta(n)$
+* 長さnのリストをn/2長に分割 ... $\small T(n+1) = 2T(n/2)+\Theta(n)$
 $\Rightarrow T(n) = \Theta(n\log n)$
 * リストxsを[]とxsに分割する時 ... $\small T(n+1) = T(n) + \Theta(n)$
 $\Rightarrow T(n) = \Theta(n^2)$
 
 ---
 ## 平衡木の構築
-部分木の高さ情報をノードに維持する
+平衡木を保証するmktreeには，部分木の高さ情報が必要
 ```haskell
 data Tree a = Null | Node Nat (Tree a) a (Tree a)
 ```
@@ -428,39 +485,41 @@ mkTree = foldr insert Null
 
 insert x Null = node Null x Null
 insert x (Node h l y r)
-    | x < y = balance (insert x l) y r
-    | x == y = Node h l y r
-    | y < x = balance l y (insert x r)
+    | x  < y = balance (insert x l) y r
+    | x == y = Node h l y r -- 重複は破棄
+    | y  < x = balance l y (insert x r)
 ```
 balance関数：高さ情報を使って平衡を維持 (3ケースを考慮)
 
-1. $height\ l = height\ r + 2$
+1. $h(l) = h(r) + 2$
+1. $h(ll) < h(rl)$
+1. $h(r) = h(l)+2$
 
 ---
-$\scriptsize height\ r = height\ l - 2 = height\ ll - 1 \le height\ rl \le height\ ll$
+1. $\scriptsize h(l) = h(r)+2 = h(ll)-1 \le h(rl) \le h(ll)$
 ```haskell
 balance l x r = rotr (node l x r) -- 右回転のbalance関数
 rotr (Node _ (Node _ ll y rl) x r) = node ll y (node rl x r)
 ```
 ![fit](fig-rotr.png)
-$\small |height\ ll - height(node\ rl\ x\ r)|$
-$\small = |height\ ll - 1 - height\ rl\ \max\ height\ r|$
-$\small = |height\ ll - 1 - height\ rl|$
-$\small \le 1$
+$\scriptsize |h(ll) - h(node\ rl\ x\ r)|$
+$\scriptsize = |h(ll) - 1 - h(rl) \max\ h(r)|$
+$\scriptsize = |h(ll) - 1 - h(rl)| \le 1$
 
 ---
-2. $\small height\ ll \lt height\ rl$
-$\small \Rightarrow height\ ll+1 = height\ rl　(\because lは平衡)$
-
+2. $\small h(ll) \lt h(rl) \Rightarrow h(ll)+1 = h(rl)　(lは平衡)$
 ```haskell
 balance l x r = rotr (node (rotl l) x r)
 rotl (Node _ ll y (Node _ lrl z rrl)) = node (node ll y lrl) z rrl
 ```
 ![fit](fig-rotl.png)
-
-3. $\small height\ r=height\ l+2$ ;上と同様
+$\scriptsize |h(node\ ll\ y\ lrl) - h(node\ rrl\ x\ r)|$
+$\scriptsize = |h(ll) \max h(lrl) - h(rrl) \max h(r)|$
+$\scriptsize = |h(ll) \max h(lrl) - h(r)|$
+$\scriptsize = |h(ll)-h(r)| = 0$
 
 ---
+3. $\small h(r) = h(l)+2$ ... 2.と同様
 ```haskell
 -- balance関数全体
 bias :: Tree a -> Int
@@ -478,31 +537,39 @@ rotateR t1 x t2 = if 0 <= bias t1 then rotr (node t1 x t2)
 rotateL t1 x t2 = if bias t2 <= 0 then rotl (node t1 x t2)
                                   else rotl (node t1 x (rotr t1))
 ```
-高さが2以上異なる木の平衡関数gbalanceは次節でも使う
 
 ---
-## 高さが2以上異なる木t1,t2の平衡
+### 高さが3以上異なる木t1,t2の平衡
 * 前提：$\small h1 \gt h2+2$
-t1の右部分木$r=r_k$について　$\small 0\le height\ r - height\ t2 \le 1$
-を満たす部分木は確実に存在する
+t1の右部分木$r=r_k$について　$\small 0\le h(r) - h(t2) \le 1$
+を満たす部分木は確実に存在する（1or2ずつ高さが低くなる）
+
+$\small |h(l) - h(node\ r\ x\ t_2)| \le 2$ ... balance関数で結合可能
+
+---
 ```haskell
 balanceR :: Set a -> a -> Set a -> Set a
 balanceR (Node _ l y r) x t2 = if height r >= height t2+2
     then balance l y (balanceR r x t2)
     else balance l y (node r x t2)
 
+balanceL :: Set a -> a -> Set a -> Set a
+balanceL (Node _ l y r) x t2 = if height l >= height t2+2
+    then balance (balanceL l x t2) y r
+    else balance (node l x t2) y r
+
 type Set a = Tree a
 ```
-balanceR t1 x t2 ... $\small O(h1-h2)$
+balanceR, balanceL ... $\small O(|h1-h2|)$
 
 ---
-gbalanceとして以下を得る
 ```haskell
 gbalance :: Set a -> a -> Set a -> Set a
 gbalance t1 x t2
     | abs (h1-h2) < 2 = balance  t1 x t2
     | h1 > h2+2       = balanceR t1 x t2
     | h1+2 < h2       = balanceL t1 x t2
+    where h1 = height t1; h2 = height t2
 ```
 * balance関数 ... 定数時間
 * gbalance関数 ... 挿入は対数時間，構築は$\small\Theta(n\log{n})$
@@ -584,10 +651,6 @@ sew = foldr step (Null,Null)
           step (t1,t2) (RP x t) = (t1, gbalance t2 x t)
 ```
 split, pieces, saw ... $\small O(h)$
-
----
-# 4-4 課題
-Exercise 4-17
 
 ---
 # Excercise
