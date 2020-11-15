@@ -306,7 +306,7 @@ $\small\Omega(m\log(1+\frac{n}{m})+n\log(1+\frac{m}{n}))$
 問題に対して，$\small A(m,n)$個の異なる解があると仮定する．
 
 $\scriptsize
-A(1,1) = 1 \ \ ([],A_{11})\\
+A(1,1) = 2 \ \ ([],A_{11})\\
 A(2,2) = 6 \ \ ([],A_{ij}, [A_{1i}A_{2j}]) \ \ (\because 狭義単調増加関数)\\
 $
 
@@ -399,9 +399,8 @@ height (Mode l x r) = 1 + max (height l) (height r)
 ---
 ## 木の高さとサイズの関係
 同サイズの木が同じ高さである必要はなく，高さhとサイズnは
-$\small\
-lceil \log(n+1) \rceil \le h \le n \lt 2^h,
-h\ge \lceil \log(n+1) \rceil$を満たす．
+$\small
+\lceil \log(n+1) \rceil \le h \le n \lt 2^h$を満たす．
 
 左/右部分木の高さの差が最大でも1のとき，木はバランスしている．
 （他にもバランスの定義は色々あるらしい...）
@@ -418,13 +417,13 @@ $S(h)$ ... 高さhの木がとりうる最小サイズ
 
 $\rightarrow S(H(n)) \le n$
 
-$\small S(n)$に下限$\small f(n)$を設けることで，$\small H(n)$の上限を求める
-$\small S(n) \ge f(n)$の時，
+$\small S(h)$に下限$\small f(h)$を設けることで，$\small H(n)$の上限を求める
+$\small S(h) \ge f(h)$の時，
 $\small n \ge f(H(n)) \Rightarrow  H(n) \le f^{-1}(n)$
 
 ---
 #### Proof. 続き
-* $\small Null ... h=0, S(0) = 0$
+* $\small h = 0... Null, S(0) = 0$
 * $\small h=1 ... S(1) = 1$
 * $\small S(h+2) = S(h+1) + S(h) + 1 \longrightarrow S(h) = Fib(h+2)-1$
 
@@ -440,13 +439,13 @@ $
 $\small x^2-x-1=0$の二つの解，$\small \phi=\frac{1+\sqrt{5}}{2},\ \ \psi\frac{1-\sqrt{5}}{2}$
 
 $\small fib(n) = (\phi^n - \psi^n)/\sqrt5$
-$\small fib(n) > (\phi^n - 1)/\sqrt5 \ \ \scriptsize(\because \psi < 1)$
+$\small fib(n) > (\phi^n - 1)/\sqrt5 \ \ \scriptsize(\because |\psi| < 1)$
 
 したがって前ページの式を適用して，
 
 $\small (\phi^{H(n)+2}-1)/\sqrt5-1 \le fib(H(n)+2)-1 = S(H(n)) \le n$
 
-$\Rightarrow (H(n)+2)\log\phi \lt \log(n+1)+\Theta(n)$
+$\Rightarrow (H(n)+2)\log\phi \lt \log(n+1)+\Theta(1)$
 $\blacksquare$
 
 ---
@@ -481,7 +480,7 @@ node l x r = Node h l x r where h = 1 + max (height l) (height r)
 ---
 ```haskell
 mktree :: Ord a => [a] -> Tree a
-mkTree = foldr insert Null
+mktree = foldr insert Null
 
 insert x Null = node Null x Null
 insert x (Node h l y r)
@@ -491,12 +490,13 @@ insert x (Node h l y r)
 ```
 balance関数：高さ情報を使って平衡を維持 (3ケースを考慮)
 
-1. $h(l) = h(r) + 2$
+1. $h(rl) \le h(ll)$
 1. $h(ll) < h(rl)$
 1. $h(r) = h(l)+2$
 
 ---
-1. $\scriptsize h(l) = h(r)+2 = h(ll)-1 \le h(rl) \le h(ll)$
+仮定：$\small h(rl) \le h(ll)$
+1. $\scriptsize h(l)-2 = h(r) = h(ll)-1 \le h(rl) \le h(ll)$
 ```haskell
 balance l x r = rotr (node l x r) -- 右回転のbalance関数
 rotr (Node _ (Node _ ll y rl) x r) = node ll y (node rl x r)
@@ -508,6 +508,7 @@ $\scriptsize = |h(ll) - 1 - h(rl)| \le 1$
 
 ---
 2. $\small h(ll) \lt h(rl) \Rightarrow h(ll)+1 = h(rl)　(lは平衡)$
+$\small h(r) = h(l)-2 = h(rl)-1 = h(ll) = h(lrl) \max h(rrl)$
 ```haskell
 balance l x r = rotr (node (rotl l) x r)
 rotl (Node _ ll y (Node _ lrl z rrl)) = node (node ll y lrl) z rrl
@@ -523,7 +524,7 @@ $\scriptsize = |h(ll)-h(r)| = 0$
 ```haskell
 -- balance関数全体
 bias :: Tree a -> Int
-bias (Node _ l x r) = height l = height r
+bias (Node _ l x r) = height l - height r
 
 balance :: Tree a -> a -> Tree a -> Tree a
 balance t1 x t2
@@ -554,9 +555,9 @@ balanceR (Node _ l y r) x t2 = if height r >= height t2+2
     else balance l y (node r x t2)
 
 balanceL :: Set a -> a -> Set a -> Set a
-balanceL (Node _ l y r) x t2 = if height l >= height t2+2
-    then balance (balanceL l x t2) y r
-    else balance (node l x t2) y r
+balanceL t1 x (Node _ l y r) x = if height l >= height t1+2
+    then balance (balanceL t1 x l) y r
+    else balance (node y1 x l) y r
 
 type Set a = Tree a
 ```
@@ -574,16 +575,23 @@ gbalance t1 x t2
 * balance関数 ... 定数時間
 * gbalance関数 ... 挿入は対数時間，構築は$\small\Theta(n\log{n})$
 
-Q. $\Theta(n\log{n})$より高速にリストから木を構築できる？
+**Q. $\Theta(n\log{n})$より高速にリストから木を構築できる？**
 
 ---
+**A. $\small \Theta(n\log{n})$より高速にはできない**
+
+木の構築計算量の下限を求めることに対応．
+長さnのリストからの構築が$\small B(n)$回の比較で完了するとする．
 ```haskell
 sort :: Ord a => [a] -> [a]
 sort = flatten . mktree
 ```
-比較回数 $\small B(n) \ge \Omega(n\log{n})　\because$ 決定木とスターリン近似
+木の根から葉を辿ってソートするとき，$n!$通りの順列が存在．
+高さhの木の要素数により，$n! \le 2^h \iff h \ge \log(n!)$
 
-A. $\small \Theta(n\log{n})$より高速にはできない
+
+計算量の下限$\small B(n) \ge \Omega(n\log{n})　\because$ 決定木とスターリン近似
+
 
 <!---
 # 4-3 課題
@@ -602,14 +610,17 @@ member (Node _ l x r) | x < y  = member x l
                       | x == y = True
                       | x > y  = member x r
 
-delete :: Ord a => a -> Set a => Set a
+delete :: Ord a => a -> Set a -> Set a
 delete x Null = Null
-delete (Node _ l x r) | x < y  = balance (delete x l) y r
-                      | x == y = combine l r
-                      | x > y  = balance l y (delete x r)
+delete x (Node _ l y r) | x < y  = balance (delete x l) y r
+                        | x == y = combine l r
+                        | x > y  = balance l y (delete x r)
 ```
+delete ... 高さは高々1しか変わらないのでbalance関数を適用
+
 ---
 ## 高さの差が高々1の平衡木の連結
+#### 二つ目の木の最も左にある要素を使って結合
 ```haskell
 deleteMin :: Ord a => Set a -> (a,Set a)
 deleteMin (Node _ Null x r) = (x,r)
@@ -624,55 +635,74 @@ combine l r = balance l x t where (x,t) = deleteMin r
 大きさがそれぞれm,nの木の連結 ... $\small O(\log{n}+\log{m})$
 
 ---
+## 木の分割 $\tinyある値以下の要素集合と，それ以外の集合に分割$
 ```haskell
--- 木の分割 --
-data Piece a = LP (Set a) a | RP a (Set a)
-
 -- split x xs = (ys,zs) ⇄ combine ys zs = xs
 split :: ord a => a -> Set a -> (Set a, Set a)
 split x t = sew (pieces x t)
 ```
-一度ピースに分解してから，それぞれを縫い合わせることで実現
-
 ![fit](fig-pieces.png)
 
 ---
-
+一度ピースに分解後，それぞれを縫い合わせる
 ```haskell
+data Piece a = LP (Set a) a | RP a (Set a)
+
 pieces :: Ord a => a -> Set a -> [Piece a]
 pieces x t = addPiece t [] where
     addPiece Null ps = ps
     addPiece (Node _ l y r) ps | x < y = addPiece l (RP y r : ps)
                                | x >=y = addPiece r (LP l y : ps)
+```
+* LP l x ... lから右部分木を除いたもの
+* RP x r ... rから左部分木を除いたもの
 
+---
+LP同士，あるいはRP同士を挿入で結合する．
+```haskell
 sew :: [Piece a] -> (Set a,Set a)
 sew = foldr step (Null,Null)
     where step (t1,t2) (LP t x) = (gbalance t x t1, t2)
           step (t1,t2) (RP x t) = (t1, gbalance t2 x t)
 ```
-split, pieces, saw ... $\small O(h)$
+split, pieces, sew ... $\small O(h)$
+**Proof**
+pieceの高さ=関連づいた木の高さと定義すると，
+pieces x tは，$\small h_1,h_2,\dots,h_k (\le h)$と高さが単調増加するリストを生成
+
+sewのコストは，$\small \Sigma_{k=0}(h_k-h_{k-1}) \le h \ \ (\because k \le h)$　となる．
+
+---
+## Others
+* combine,splitは14章で使うよ
+* 二分探索初登場は，1946年．（$n=2^k-1$の特殊な場合）
+* 全てのnについては，1960年．
+* サドルバック探索命名者はDavid Gries
+* sewやpiexes関数はZipperと呼ばれる木の分離・結合方法と深い関係
+* 平衡木はAVL木とも呼ばれる
+* 赤黒木のような平衡木もある
 
 ---
 # Excercise
-## 4-1.1
-floor関数の性質　　$n \le \lfloor r \rfloor \iff n \le r \ \ \small(n \in N, r \in R)$
-を使って　　$a+1\lt b$の時のみ　　$a \lt (a+b)\ div\ 2 \lt b$
-となることを証明せよ
+## 4-1.a
+floor関数の性質　$n \le \lfloor r \rfloor \iff n \le r$を使って
+$a+1\lt b$の時のみ $a \lt (a+b)\ div\ 2 \lt b$となることを証明
 
+**Proof**
 $\small a \lt div\ (a+b)\ 2 \lt b$
 $\small a \lt \lfloor\frac{a+b+1}{2}\rfloor \lt b \ \ (\because floor)$
 
-$\small \lfloor\frac{a+b+1}{2}\rfloor \lt b$　　を満たすには，$\small a+1 < b$　　が必要
+$\small \lfloor\frac{a+b+1}{2}\rfloor \lt b$　　を満たす時，$\small \lfloor a+1\rfloor = a+1 < b \ \ \blacksquare$
 
 ---
-## 4-1.2
-ceiling関数の性質　　$r \le \lceil n \rceil \iff r \le n \ \ \small(n \in N, r \in R)$
-を使って　　$n \lt 2^h$の時に　　$\lceil \log(n+1)\rceil\le h$
-となることを証明せよ
+## 4-1.b
+ceiling関数の性質　　$\lceil r \rceil \le n \iff r \le n$を使って
+$n \lt 2^h$の時に　$\lceil \log(n+1)\rceil\le h$ となることを証明
 
 $\small n < 2^h$
-$\small \log n \lt h$
+$\small n+1 \le 2^h$
 $\small \log (n+1) \lt h \iff \lceil\log(n+1)\rceil\le h$
+$\blacksquare$
 
 ---
 ## 4-2
@@ -680,62 +710,85 @@ $\small \log (n+1) \lt h \iff \lceil\log(n+1)\rceil\le h$
 -- a < m < b, f(a) < t <= f(b)を満たすものとする
 head $ [x | x <- [a+1..m], t <= f x] ++ [x | x <- [m+1..b], t <= f x]
 ```
-f(m) < tの時，第一項リストは空にもかかわらずsmallest関数は値を返す．なぜ
+Q. f(m) < tの時，第一項リストは空にもかかわらずsmallest関数は値を返す．なぜ？
 
 
-smallest関数は範囲内に解がない時bを返す実装になっている
+A. smallest関数は範囲内に解がない時bを返す実装になっているため
 
 ---
 ## 4-3
-最悪条件でsmallest関数が必要とするステップ数$\small n (=b-a+1)$を，
+最悪条件でのsmallest (a,b) f tでのfの評価に必要な計算時間T(n)
+$\scriptsize (n=b-a+1, a \lt m \lt b, f(a) \lt t \lt f(b))$を，
 $\scriptsize T(2) = 0$
-$\scriptsize T(n) = T(\lceil(n+1)/2\rceil)+1 \ \ \ \ (n\gt2)$
-$\scriptsize T(n) = \lceil\log(n-1)\rceil$　　を用いて求めよ
+$\scriptsize T(n) = T(\lceil(n+1)/2\rceil)+1 \ \ \ \ (n\gt2)，及びceilingの性質$を使って
+$\scriptsize T(n) = \lceil\log(n-1)\rceil$　を示せ
 
-$\scriptsize 
-T(n) = T(\lceil(n+1)/2\rceil)+1 = \lceil \log(n-1)\rceil \\
-\rightarrow 
+必要計算量なので，$T(n) \le k$とおいて，二つのT(n)が成立する不等式を立てるらしい...難しい...
+
+---
+#### 結論から辿っていく方針で解いた
+$\scriptsize
+\lceil \log(n-1) \rceil \le k \\
+\iff n-1 \le 2^k \\
+\iff n+1 \le 2^k + 2 \\
+\iff (n+1)/2 \le 2^{k-1} + 1 \\
+\iff \lceil (n+1)/2-1 \rceil \le 2^{k-1} \\
+\iff \log(\lceil (n+1)/2-1 \rceil) \le k-1 \\
+\iff \log(\lceil (n+1)/2-1 \rceil)+1 \le k \\
+\iff \lceil \log(\lceil (n+1)/2-1 \rceil)+1 \rceil \le k \\
+\iff \lceil \log(\lceil (n+1)/2 \rceil)+1 \rceil \le k \\
+\iff \log(\lceil (n+1)/2 \rceil)+1 = T(n) \le k \\
+\therefore T(n) = \lceil \log(n-1) \rceil
 $
 
 ---
 ## 4-4
-4-3で，$\small f(a) \lt t \le f(b)$のとき，
-$\small t\le f(x)$の形で$\small\lceil \log(n-1) \rceil$の比較を要するsmallest (a,b) f tを計算するアルゴリズムを示す．
+前問から，$\small f(a) \lt t \le f(b)$のとき，$\small t\le f(x)$の評価計算量=$\small\lceil \log(n-1) \rceil$となるsmallest (a,b) f tのアルゴリズムを示す．
+
+A.
+答え見ましたw
 
 ---
 ## 4-5
 図4.1上で472のインデックスは？
 
+実行する
+... [(0,9),(7,5),(5,6),(9,0)]
+
 ---
 ## 4-6
 $f(x,y) = x^3+y^3$のとき，saddleback関数での$t=1729$の探索結果は？
 
+実行する
+結果 ... [(1,12),(10,9),(9,10),(12,1)]
+
 ---
 ## 4-7
-flatten関数を線形時間にするのにaccumulateを使う．flatcatを再帰定義する
+flatten関数を線形時間にするflatcatを，flattenや(++)を使わずに定義する
 ```haskell
 flatcat :: Tree a -> [a] -> [a]
-flatcat t xs = flatten t ++ xs
+flatcat t xs = flatten t ++ xs  -- これを定義し直す
 
 flatten = flatcat t []
 ```
 
 ```
-flatten :: Tree a -> [a]
-flatten (Node tl a tr) = fla
+flatcat :: Tree a -> [a] -> [a]
+flatcat Null xs = xs
+flatcat (Node l x r) xs = flatcat l $ x : flatcat r xs
 ```
 
 ---
 ## 4-8
 全ての二分木$t$について  $\small height(t) \le size(t) \lt 2^{height(t)}$を証明
 
-1. 全要素が左部分木のみにある場合が最悪条件：$\scriptsize height(t) \le size(t)$
+1. hが最も大きくなる $\iff$ 全要素が左部分木のみにある場合：$\scriptsize height(t) \le size(t)$
 
-2. 全ての要素がバランスしている時が最悪条件：
-$\scriptsize size(t) = 2^m$の時，$\scriptsize height(t) = m+1$
-$\scriptsize 2^m \lt size(t) \lt 2^{m+1}$の時，$\scriptsize height(t) = m+1$
+2. hが最も小さくなる $\iff$ 全ての要素がバランスしている場合：
+* $\scriptsize size(t) = 2^m-1$の時，$\scriptsize height(t) = m$
+* $\scriptsize 2^m \le size(t) \lt 2^{m+1}$の時，$\scriptsize height(t) = m+1$
 
-$\scriptsize\therefore height(t) \le size(t) \lt 2^{height(t)}$
+$\scriptsize\therefore height(t) \le size(t) \lt 2^{height(t)} \ \ \blacksquare$
 
 ---
 ## 4-9
@@ -743,19 +796,32 @@ $\scriptsize\therefore height(t) \le size(t) \lt 2^{height(t)}$
 ```haskell
 partition p xs = (filter p xs, filter (not.p) xs)
 ```
-
+A.
 ```haskell
 partiton p xs = (positives, negatives)
     where
     (positives, negatives) = foldr f ([],[]) xs
     f (ps,ns) x
         | p x = (x:ps, ns)
-        | not (p x) = (ps,x:ns)
+        | otherwise = (ps,x:ns)
 ```
 
 ---
 ## 4-10
-Tree [a] を構築する
+要素の重複を許す木 Tree [a] を構築する
+
+```haskell
+mktree :: Ord a => [a] -> Tree [a]
+mktree = foldr insert Null
+
+insert x Null = node Null [x] Null
+insert x (Node h l xs r)
+    | x == head xs = Node h l (x:xs) r
+    | x  < head xs = Node h (insert x l) xs r
+    | x  > head xs = Node h l xs (insert x r)
+```
+模範解答ではpartition3関数を定義（6章で使うらしい）
+
 
 ---
 ## 4-11
@@ -771,48 +837,89 @@ $W(n) = W(0) + n\Theta(n) \rightarrow \Theta(n^2)$
 
 ---
 ## 4-12
-$\log{n!} = \Omega(n\log{n})$,　$W(n) = \Theta(n^2)$　を示す
+スターリングの近似を使わず $\log{n!} = \Omega(n\log{n})$を示す
 
+$\small
+n! < n^n \rightarrow \log{n!} < n\log{n}    \ (n\le 2)を使う？でも不等式だし...
+$
+
+A.
+$\scriptsize
+nは偶数とする．\\
+n! \ge n(n-1)(n-2)\dots (n/2) \ge (n/2)^{n/2} \\
+\therefore \log(n!) \ge (n/2)\log(n/2) \ge n/4
+\ \ (ただしn \ge 4)\\
+らしいが...等号は許されるのだろうか？
+$
 
 ---
 ## 4-13
-combineの二つ目の定義として，
+二つの関数が同じ結果となるmergeを定義せよ(次章で使うみたい)
+
 ```haskell
 flatten (combine t1 t2) = flatten t1 ++ flatten t2
-```
-次の章を見越して，次のmergeを定義せよ
-```haskell
+↓↑
 flatten (union t1 t2) = merge (flatten t1) (flatten t2)
+ ```
+
+ A.t1,t2の要素をsortするだけ？
+ ```haskell
+ merge (x:xs) (y:ys)
+    | x == y = x : y : merge xs ys
+    | x  < y = x : merge xs (y:ys)
+    | x  > y = y : merge (x:xs) ys
  ```
 
  --- 
  ## 4-14-1
- union関数の一例：木の一つを展開し，要素を別の木に一つずつ挿入する方法
+ union関数の一例：展開した木の要素を別の木に挿入する方法
  ```haskell
  union :: Ord a => Set a -> Set a -> Set a
  union t1 t2 = foldr insert t1 (flatten t2)
  ```
  t1の要素数 = m，t2の要素数 = n　の時，union関数の計算量は？
 
+insert : 要素数mの木に挿入する場合：$O(\log m)$
 
  --- 
  ## 4-14-2
- union関数の一例：両方の木を展開・マージしてソートされたリストを作成してから木を構築する．（配列を使えば線形時間でリスト→木の変換が可能）
- 
+ union関数の一例：両方の木を展開・マージしてソートされたリストを作成してから木を構築 
  ```haskell
  union t1 t2 = build (merge (flatten t1) (flatten t2))
- build xs = from (0,n) (listArray (0,n-1) where n = length xs)
+ build xs = from (0,n) (listArray (0,n-1) xs) where n = length xs
  ```
-1. from関数を定義せよ．
-1. union関数の計算量は？
+* from関数を定義せよ．
+```haskell
+from (a,b) arr = if l == r
+    then Null
+    else node (from (a,b-1) arr) (arr!i) (from (a+1,b) arr)
+    where m = div (a+b) 2
+```
+---
+* union関数の計算量は？
+2つの木の要素数がそのまま計算量になるので，$\Theta(\log(m+n))$
 
 ---
 ## 4-15
-deleteMin関数，combine関数の定義でbalance関数が正当化されるのはなぜ？
+deleteMin関数及びcombine関数の定義でbalance関数が正当化されるのはなぜ？
+
 
 ---
 ## 4-16
 balanceLの定義
+
+再掲：balanceRの対象操作にするだけ
+```haskell
+balanceR :: Set a -> a -> Set a -> Set a
+balanceR (Node _ l y r) x t2 = if height r >= height t2+2
+    then balance l y (balanceR r x t2)
+    else balance l y (node r x t2)
+
+balanceL :: Set a -> a -> Set a -> Set a
+balanceL t1 x (Node _ l y r) x = if height l >= height t1+2
+    then balance (balanceL t1 x l) y r
+    else balance (node y1 x l) y r
+```
 
 ---
 ## 4-17

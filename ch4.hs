@@ -154,3 +154,27 @@ gbalance t1 x t2
     | h1 > h2+2       = balanceR t1 x t2
     | h1+2 < h2       = balanceL t1 x t2
     where h1 = height t1; h2 = height t2
+
+-----data sets--------------------------------------------
+
+member :: Ord a => a -> Set a -> Bool
+member _ Null = False
+member x (Node _ l y r) | x  < y    = member x l
+                        | x  > y    = member x r
+                        | otherwise = True
+
+delete :: Ord a => a -> Set a -> Set a
+delete _ Null = Null
+delete x (Node _ l y r) | x < y     = balance (delete x l) y r
+                        | x > y     = balance l y (delete x r)
+                        | otherwise = combine l r
+
+deleteMin :: Ord a => Set a -> (a,Set a)
+deleteMin Null = undefined
+deleteMin (Node _ Null x r) = (x,r)
+deleteMin (Node _ l x r) = (y,balance t x r) where (y,t) = deleteMin l
+
+combine :: Ord a => Set a -> Set a -> Set a
+combine l Null = l
+combine Null r = r
+combine l r = balance l x t where (x,t) = deleteMin r
