@@ -507,8 +507,8 @@ $\scriptsize = |h(ll) - 1 - h(rl) \max\ h(r)|$
 $\scriptsize = |h(ll) - 1 - h(rl)| \le 1$
 
 ---
-2. $\small h(ll) \lt h(rl) \Rightarrow h(ll)+1 = h(rl)　(lは平衡)$
-$\small h(r) = h(l)-2 = h(rl)-1 = h(ll) = h(lrl) \max h(rrl)$
+2. $\scriptsize h(ll) \lt h(rl) \Rightarrow h(ll)+1 = h(rl)　(lは平衡)$
+$\scriptsize h(r) = h(l)-2 = h(rl)-1 = h(ll) = h(lrl) \max h(rrl)$
 ```haskell
 balance l x r = rotr (node (rotl l) x r)
 rotl (Node _ ll y (Node _ lrl z rrl)) = node (node ll y lrl) z rrl
@@ -598,7 +598,7 @@ sort = flatten . mktree
 Exercise 4-7 ~ 4-16
 -->
 ---
-# 4章4節 : 動的木 (Dynamic Sets)
+# 4章4節 : 動的集合 (Dynamic Sets)
 
 ---
 成長・縮退可能な木の集合 ... add, delete, elem，union, split
@@ -619,7 +619,7 @@ delete x (Node _ l y r) | x < y  = balance (delete x l) y r
 delete ... 高さは高々1しか変わらないのでbalance関数を適用
 
 ---
-## 高さの差が高々1の平衡木の連結
+## 高さの差が高々2の平衡木の連結
 #### 二つ目の木の最も左にある要素を使って結合
 ```haskell
 deleteMin :: Ord a => Set a -> (a,Set a)
@@ -631,7 +631,8 @@ combine l Null = l
 combine Null r = r
 combine l r = balance l x t where (x,t) = deleteMin r
 ```
-高さの差が2以上の木の連結ついてはgbalanceを用いる
+all l < all r
+高さの差が3以上の木の連結ついてはgbalanceを用いる
 大きさがそれぞれm,nの木の連結 ... $\small O(\log{n}+\log{m})$
 
 ---
@@ -670,7 +671,7 @@ split, pieces, sew ... $\small O(h)$
 pieceの高さ=関連づいた木の高さと定義すると，
 pieces x tは，$\small h_1,h_2,\dots,h_k (\le h)$と高さが単調増加するリストを生成
 
-sewのコストは，$\small \Sigma_{k=0}(h_k-h_{k-1}) \le h \ \ (\because k \le h)$　となる．
+sewのコストは，$\small \Sigma_{k=0}(h_k-h_{k-1}) \le h$　となる．
 
 ---
 ## Others
@@ -686,13 +687,18 @@ sewのコストは，$\small \Sigma_{k=0}(h_k-h_{k-1}) \le h \ \ (\because k \le
 # Excercise
 ## 4-1.a
 floor関数の性質　$n \le \lfloor r \rfloor \iff n \le r$を使って
-$a+1\lt b$の時のみ $a \lt (a+b)\ div\ 2 \lt b$となることを証明
+$a+1\lt b$のとき $a \lt (a+b)\ div\ 2 \lt b$が成立する（必要十分）となることを証明
+
+---
 
 **Proof**
 $\small a \lt div\ (a+b)\ 2 \lt b$
-$\small a \lt \lfloor\frac{a+b+1}{2}\rfloor \lt b \ \ (\because floor)$
-
-$\small \lfloor\frac{a+b+1}{2}\rfloor \lt b$　　を満たす時，$\small \lfloor a+1\rfloor = a+1 < b \ \ \blacksquare$
+$\small
+\iff a < \lfloor (a+b)/2 \rfloor < b \\
+\iff a+1 \le \lfloor (a+b)/2 \rfloor < b \\
+\iff a+1 \le (a+b)/2 < b \\
+\iff a+1 < b
+$
 
 ---
 ## 4-1.b
@@ -701,7 +707,7 @@ $n \lt 2^h$の時に　$\lceil \log(n+1)\rceil\le h$ となることを証明
 
 $\small n < 2^h$
 $\small n+1 \le 2^h$
-$\small \log (n+1) \lt h \iff \lceil\log(n+1)\rceil\le h$
+$\small \log (n+1) \le h \iff \lceil\log(n+1)\rceil\le h$
 $\blacksquare$
 
 ---
@@ -710,23 +716,40 @@ $\blacksquare$
 -- a < m < b, f(a) < t <= f(b)を満たすものとする
 head $ [x | x <- [a+1..m], t <= f x] ++ [x | x <- [m+1..b], t <= f x]
 ```
-Q. f(m) < tの時，第一項リストは空にもかかわらずsmallest関数は値を返す．なぜ？
+Q. fは単調増加を仮定しない．f(m) < tの時，第一項リストは空リストになることを仮定できない．smallest関数は値を返す．この値はどんな性質を持つか．
 
 
-A. smallest関数は範囲内に解がない時bを返す実装になっているため
+A. 
+問題文の場合：$f(x-1) \lt t \le f(x)$を満たすxのうち，もっとも値の小さいものを返す
 
 ---
 ## 4-3
 最悪条件でのsmallest (a,b) f tでのfの評価に必要な計算時間T(n)
-$\scriptsize (n=b-a+1, a \lt m \lt b, f(a) \lt t \lt f(b))$を，
+$\scriptsize (n=b-a+1)$を，
 $\scriptsize T(2) = 0$
 $\scriptsize T(n) = T(\lceil(n+1)/2\rceil)+1 \ \ \ \ (n\gt2)，及びceilingの性質$を使って
 $\scriptsize T(n) = \lceil\log(n-1)\rceil$　を示せ
 
-必要計算量なので，$T(n) \le k$とおいて，二つのT(n)が成立する不等式を立てるらしい...難しい...
+全てのkについて $\small b \le k$ の時のみ $\small a \le k$ となり $\small a=b$となる.すなわち以下を示せば良い
+$\scriptsize
+\lceil \log(n-1) \rceil = \lceil \log(\lceil (n+1)/2 \rceil-1) \rceil+1 \le k
+$
 
 ---
-#### 結論から辿っていく方針で解いた
+$\scriptsize
+\lceil \log(\lceil (n+1)/2 \rceil-1) \rceil+1 \le k \\
+\lceil \log(\lceil (n+1)/2 \rceil-1) \rceil \le k-1 \\
+\log(\lceil (n+1)/2 \rceil-1) \le k-1 \\
+\lceil (n+1)/2 \rceil-1 \le 2^{k-1} \\
+(n+1)/2 \le 2^{k-1}+1 \\
+n-1 \le 2^k \\
+\log(n-1) \le k \\
+\therefore \lceil \log(n-1) \rceil \le k
+$
+
+
+---
+#### 結論から辿っていくと...
 $\scriptsize
 \lceil \log(n-1) \rceil \le k \\
 \iff n-1 \le 2^k \\
@@ -746,7 +769,10 @@ $
 前問から，$\small f(a) \lt t \le f(b)$のとき，$\small t\le f(x)$の評価計算量=$\small\lceil \log(n-1) \rceil$となるsmallest (a,b) f tのアルゴリズムを示す．
 
 A.
-答え見ましたw
+```smallenst (a,b) f t``` は，$a\le x \lt b$の範囲で，
+$f(x) \lt t \le f(x+1)$となるx(b-a個)のいずれかを返す．
+そのため，$2^h \ge b-a$ を満たす高さhをもつ決定木である．
+$\small b-a = n-1$のとき，hの下限を$\small h \ge \lceil \log(n-1) \rceil$で押さえられる．
 
 ---
 ## 4-5
@@ -764,14 +790,14 @@ $f(x,y) = x^3+y^3$のとき，saddleback関数での$t=1729$の探索結果は�
 
 ---
 ## 4-7
-flatten関数を線形時間にするflatcatを，flattenや(++)を使わずに定義する
+flatten関数の線形時間版（下記）をflattenや(++)を使わずに書く．
 ```haskell
 flatcat :: Tree a -> [a] -> [a]
 flatcat t xs = flatten t ++ xs  -- これを定義し直す
 
 flatten = flatcat t []
 ```
-
+A.
 ```
 flatcat :: Tree a -> [a] -> [a]
 flatcat Null xs = xs
@@ -789,6 +815,19 @@ flatcat (Node l x r) xs = flatcat l $ x : flatcat r xs
 * $\scriptsize 2^m \le size(t) \lt 2^{m+1}$の時，$\scriptsize height(t) = m+1$
 
 $\scriptsize\therefore height(t) \le size(t) \lt 2^{height(t)} \ \ \blacksquare$
+
+---
+### 教科書の解法：
+木がNullの場合はsimple．木がNodeの場合には，
+$\scriptsize
+size \ (node \ l \ x \ r) \\
+= size \ l + 1 + size \ r \\
+\le (2^{height \ l}-1) + 1 + (2^{height \ r}-1) \\
+\le 2^{1+max \ (height \ l) \ (height \ r)}-1 \\
+\le 2^{height \ t}-1
+\lt 2^{height \ t}\\
+\blacksquare
+$
 
 ---
 ## 4-9
@@ -820,7 +859,20 @@ insert x (Node h l xs r)
     | x  < head xs = Node h (insert x l) xs r
     | x  > head xs = Node h l xs (insert x r)
 ```
-模範解答ではpartition3関数を定義（6章で使うらしい）
+
+---
+### 教科書の解法：
+教科書ではpartition3関数を定義（6章で使うらしい）
+```haskell
+partition3 :: Ord a => a -> [a] -> ([a],[a],[a])
+partition3 y = foldr op ([],[],[])
+    where op x (us,vs,ws) | x  < y = (x:us,vs,ws)
+                          | x == y = (us,x:vs,ws)
+                          | x >  y = (us,vs,x:ws)
+mktree [] = Null
+mktree xs = Node (mktree us) vs (mktree ws)
+    where (us,vs,ws) = partition3 (head xs) xs
+```
 
 
 ---
@@ -829,11 +881,11 @@ best case  : $\small B(n+1) = 2B(n/2)+\Theta(n)$
 worst case : $\small W(n+1) = W(n)+\Theta(n)$
 $二分探索木構築時のB(n), W(n)$を求めよ
 
-$B(n) = 2^{n/2}B(0) + n/2\Theta(n/2^n)$
-$B(n) = n\Theta(\log n)$
-$B(n) = \Theta(n\log n)$
-
-$W(n) = W(0) + n\Theta(n) \rightarrow \Theta(n^2)$
+A.
+$\scriptsize
+B(n) = 2^{n/2}B(0) + n/2\Theta(n/2^n) \rightarrow \Theta(n\log n) \\
+W(n) = W(0) + n\Theta(n) \rightarrow \Theta(n^2)
+$
 
 ---
 ## 4-12
@@ -897,12 +949,16 @@ from (a,b) arr = if l == r
 ```
 ---
 * union関数の計算量は？
+
+A
 2つの木の要素数がそのまま計算量になるので，$\Theta(\log(m+n))$
 
 ---
 ## 4-15
 deleteMin関数及びcombine関数の定義でbalance関数が正当化されるのはなぜ？
 
+A.
+deleteMin ... 要素の一つ削除する関数なので，部分木に生じる高さの差は高々2のため．combine関数も同様．
 
 ---
 ## 4-16

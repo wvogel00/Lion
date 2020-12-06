@@ -178,3 +178,14 @@ combine :: Ord a => Set a -> Set a -> Set a
 combine l Null = l
 combine Null r = r
 combine l r = balance l x t where (x,t) = deleteMin r
+
+-------------------
+-- 重複を許す木
+mk_duplicateTree :: Ord a => [a] -> BalancedTree [a]
+mk_duplicateTree = foldr insert_duplicate Null
+
+insert_duplicate x Null = node Null [x] Null
+insert_duplicate x (Node h l xs r)
+    | x == head xs = Node h l (x:xs) r
+    | x  < head xs = Node h (insert_duplicate x l) xs r
+    | x  > head xs = Node h l xs (insert_duplicate x r)
