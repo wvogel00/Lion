@@ -808,7 +808,7 @@ flatcat (Node l x r) xs = flatcat l $ x : flatcat r xs
 ## 4-8
 全ての二分木$t$について  $\small height(t) \le size(t) \lt 2^{height(t)}$を証明
 
-1. hが最も大きくなる $\iff$ 全要素が左部分木のみにある場合：$\scriptsize height(t) \le size(t)$
+1. $\scriptsize height(t) \le size(t)$
 
 2. hが最も小さくなる $\iff$ 全ての要素がバランスしている場合：
 * $\scriptsize size(t) = 2^m-1$の時，$\scriptsize height(t) = m$
@@ -892,21 +892,21 @@ $
 スターリングの近似を使わず $\log{n!} = \Omega(n\log{n})$を示す
 
 $\small
-n! < n^n \rightarrow \log{n!} < n\log{n}    \ (n\le 2)を使う？でも不等式だし...
+n! < n^n \rightarrow \log{n!} < n\log{n}    \ (n\le 2)を使う？
 $
 
 A.
 $\scriptsize
 nは偶数とする．\\
 n! \ge n(n-1)(n-2)\dots (n/2) \ge (n/2)^{n/2} \\
-\therefore \log(n!) \ge (n/2)\log(n/2) \ge n/4
+\therefore \log(n!) \ge (n/2)\log(n/2) \ge n/4\log{n}
 \ \ (ただしn \ge 4)\\
-らしいが...等号は許されるのだろうか？
+らしいが
 $
 
 ---
 ## 4-13
-二つの関数が同じ結果となるmergeを定義せよ(次章で使うみたい)
+二つの式が同じ結果となるmergeを定義せよ(次章で使うみたい)
 
 ```haskell
 flatten (combine t1 t2) = flatten t1 ++ flatten t2
@@ -914,10 +914,10 @@ flatten (combine t1 t2) = flatten t1 ++ flatten t2
 flatten (union t1 t2) = merge (flatten t1) (flatten t2)
  ```
 
- A.t1,t2の要素をsortするだけ？
+ A.t1,t2の要素をsortするだけ. (空リスト処理は必要)
  ```haskell
  merge (x:xs) (y:ys)
-    | x == y = x : y : merge xs ys
+    | x == y = x : merge xs ys
     | x  < y = x : merge xs (y:ys)
     | x  > y = y : merge (x:xs) ys
  ```
@@ -932,6 +932,7 @@ flatten (union t1 t2) = merge (flatten t1) (flatten t2)
  t1の要素数 = m，t2の要素数 = n　の時，union関数の計算量は？
 
 insert : 要素数mの木に挿入する場合：$O(\log m)$
+union : $n\log(m+n)$
 
  --- 
  ## 4-14-2
@@ -942,16 +943,16 @@ insert : 要素数mの木に挿入する場合：$O(\log m)$
  ```
 * from関数を定義せよ．
 ```haskell
-from (a,b) arr = if l == r
+from (a,b) arr = if a == b
     then Null
-    else node (from (a,b-1) arr) (arr!i) (from (a+1,b) arr)
+    else node (from (a,m) arr) (arr!m) (from (m+1,b) arr)
     where m = div (a+b) 2
 ```
 ---
 * union関数の計算量は？
 
 A
-2つの木の要素数がそのまま計算量になるので，$\Theta(\log(m+n))$
+2つの木の要素数がそのまま計算量になるので，$\Theta(m+n)$
 
 ---
 ## 4-15
